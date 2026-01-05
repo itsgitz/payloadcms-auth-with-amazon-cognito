@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { getCognitoService } from '../auth/cognito'
+import { parse as parseCookie } from 'cookie'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -29,15 +30,7 @@ export const Users: CollectionConfig = {
           }
           // Fallback to cookie if no Authorization header
           else if (cookieHeader) {
-            const cookies = cookieHeader.split(';').reduce(
-              (acc, cookie) => {
-                const [key, value] = cookie.trim().split('=')
-                acc[key] = value
-                return acc
-              },
-              {} as Record<string, string>,
-            )
-
+            const cookies = parseCookie(cookieHeader)
             token = cookies['cognito_id_token'] || null
           }
 
