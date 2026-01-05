@@ -18,22 +18,27 @@
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
+    "@payloadcms/db-sqlite": "3.69.0",
     "@payloadcms/next": "3.69.0",
     "@payloadcms/richtext-lexical": "3.69.0",
     "@payloadcms/ui": "3.69.0",
+    "amazon-cognito-identity-js": "^6.3.16",
+    "aws-sdk": "^2.1693.0",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
+    "jsonwebtoken": "^9.0.3",
+    "jwks-rsa": "^3.2.0",
     "next": "15.4.10",
     "payload": "3.69.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "sharp": "0.34.2",
-    "@payloadcms/db-sqlite": "3.69.0"
+    "sharp": "0.34.2"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "@testing-library/react": "16.3.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.5.4",
     "@types/react": "19.2.1",
     "@types/react-dom": "19.2.1",

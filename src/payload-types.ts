@@ -122,7 +122,9 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
-  email?: string | null;
+  email: string;
+  cognitoSub?: string | null;
+  emailVerified?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -225,6 +227,8 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   email?: T;
+  cognitoSub?: T;
+  emailVerified?: T;
   updatedAt?: T;
   createdAt?: T;
 }
