@@ -4,7 +4,11 @@ This document explains how Amazon Cognito authentication is integrated with Payl
 
 ## Overview
 
-This implementation uses a custom authentication strategy in Payload CMS to authenticate users via Amazon Cognito OAuth 2.0 flow. The local authentication strategy is disabled, and all authentication is handled through Cognito.
+This implementation uses a custom authentication strategy in Payload CMS to authenticate users via Amazon Cognito. The local authentication strategy is disabled, and all authentication is handled through Cognito.
+
+**Two authentication methods are supported:**
+1. **OAuth 2.0 Flow** - Traditional redirect-based authentication using Cognito Hosted UI
+2. **Passwordless Email OTP** - Modern passwordless authentication with one-time codes sent via email
 
 ## Architecture
 
@@ -16,19 +20,30 @@ This implementation uses a custom authentication strategy in Payload CMS to auth
    - Exchanges authorization codes for tokens
    - Retrieves user information from Cognito
 
-2. **API Routes** (`src/app/(payload)/api/auth/cognito/`)
-   - `/login` - Initiates OAuth flow with Cognito
-   - `/callback` - Handles OAuth callback and token exchange
-   - `/logout` - Clears session and logs out from Cognito
+2. **Cognito Passwordless Service** (`src/auth/cognito-passwordless.ts`)
+   - Initiates EMAIL_OTP authentication flow
+   - Sends one-time codes via email
+   - Verifies OTP codes and returns tokens
 
-3. **Custom Authentication Strategy** (`src/collections/Users.ts`)
+3. **API Routes** (`src/app/(payload)/api/auth/cognito/`)
+   - OAuth Routes:
+     - `/login` - Initiates OAuth flow with Cognito
+     - `/callback` - Handles OAuth callback and token exchange
+   - Passwordless Routes:
+     - `/passwordless/send-code` - Sends OTP to user's email
+     - `/passwordless/verify-code` - Verifies OTP and sets auth cookies
+   - Shared:
+     - `/logout` - Clears session and logs out from Cognito
+
+4. **Custom Authentication Strategy** (`src/collections/Users.ts`)
    - Verifies Cognito tokens from both Authorization headers and cookies
    - Creates or retrieves users in Payload database
    - Syncs user data from Cognito to Payload
+   - **Works with both OAuth and Passwordless flows**
 
-## Authentication Flow
+## Authentication Flows
 
-### Login Flow
+### Method 1: OAuth 2.0 Flow (Traditional)
 
 ```
 User → /api/auth/cognito/login
@@ -61,7 +76,48 @@ Finds or creates user in Payload database
 User is authenticated and can access admin panel
 ```
 
-### Logout Flow
+### Method 2: Passwordless Email OTP Flow (Modern)
+
+```
+User → /passwordless-login page
+  ↓
+Enters email address
+  ↓
+POST /api/auth/cognito/passwordless/send-code
+  ↓
+Calls Cognito InitiateAuth with USER_AUTH flow
+  ↓
+Cognito sends OTP code to user's email
+  ↓
+Stores session + email in httpOnly cookies (CSRF protection)
+  ↓
+User receives email with 6-digit code
+  ↓
+User enters code on verification page
+  ↓
+POST /api/auth/cognito/passwordless/verify-code
+  ↓
+Calls Cognito RespondToAuthChallenge with EMAIL_OTP
+  ↓
+Cognito validates code and returns tokens
+  ↓
+Stores tokens in httpOnly cookies:
+  - cognito_access_token
+  - cognito_id_token
+  - cognito_refresh_token
+  ↓
+Redirects to /admin (Payload admin panel)
+  ↓
+Payload's custom strategy reads cognito_id_token from cookies
+  ↓
+Verifies token with Cognito JWKS
+  ↓
+Finds or creates user in Payload database
+  ↓
+User is authenticated and can access admin panel
+```
+
+### Logout Flow (Shared by Both Methods)
 
 ```
 User → /api/auth/cognito/logout
@@ -180,6 +236,22 @@ PAYLOAD_SECRET=your-secret-here
    - Email (required)
    - Email verification (recommended)
 
+4. **Passwordless Authentication (EMAIL_OTP)**
+   - Go to AWS Cognito Console → User Pools → Your User Pool
+   - Navigate to **Sign-in experience** tab
+   - Under **Authentication flows**, enable:
+     - ✅ **USER_AUTH** flow
+     - ✅ **EMAIL_OTP** as preferred authentication method
+   - Under **User authentication**, configure:
+     - Email as a sign-in option
+     - Email verification required
+   - Save changes
+
+   **Important Notes:**
+   - Users must have verified email addresses in Cognito to use EMAIL_OTP
+   - OTP codes are typically 6 digits and expire after 3 minutes
+   - Cognito handles email sending automatically (using Amazon SES in background)
+
 ## Security Considerations
 
 1. **Token Verification**: All tokens are verified against Cognito's JWKS endpoint
@@ -261,6 +333,47 @@ All fields are read-only in the admin panel to prevent manual modification.
 - Verify `AWS_COGNITO_USER_POOL_ID` is correct
 - Verify `AWS_REGION` matches your user pool region
 - Check token hasn't expired
+
+### Issue: EMAIL_OTP not working / "NotAuthorizedException"
+
+**Cause**: EMAIL_OTP flow not enabled in Cognito User Pool
+
+**Solution**:
+- Enable USER_AUTH flow in Cognito console
+- Enable EMAIL_OTP as authentication method
+- Ensure user's email is verified in Cognito
+- Check that email is configured as sign-in option
+
+### Issue: OTP code not received
+
+**Cause**: Email delivery issues or verification status
+
+**Solution**:
+- Check user's email is verified in Cognito User Pool
+- Verify Amazon SES is properly configured (if using custom email)
+- Check spam/junk folder
+- Ensure email attribute exists for the user
+- Try resending the code (codes expire after 3 minutes)
+
+## Comparison: OAuth vs Passwordless
+
+| Feature | OAuth 2.0 Flow | Passwordless EMAIL_OTP |
+|---------|---------------|------------------------|
+| **User Experience** | Redirect to Cognito UI | Stay on your custom page |
+| **Branding** | Cognito's UI (customizable) | Fully custom UI |
+| **Setup Complexity** | Medium | Medium |
+| **Security** | High (industry standard) | High (no password to compromise) |
+| **User Convenience** | Good (SSO-like) | Excellent (no password to remember) |
+| **Mobile Friendly** | Redirect-based | Very friendly |
+| **Best For** | Enterprise, SSO integration | Modern apps, consumer-facing |
+| **Implementation** | 3 routes | 2 routes + custom page |
+| **Dependencies** | Cognito Hosted UI | Custom frontend |
+
+Both methods use the same:
+- Token verification (JWKS)
+- Cookie storage
+- Payload CMS custom strategy
+- User synchronization
 
 ## Development vs Production
 
