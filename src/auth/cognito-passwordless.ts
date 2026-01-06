@@ -79,7 +79,7 @@ export class CognitoPasswordlessService {
       ChallengeName: ChallengeNameType.EMAIL_OTP,
       ChallengeResponses: {
         USERNAME: email,
-        EMAIL_OTP: code,
+        EMAIL_OTP_CODE: code,
       },
       Session: session,
     })

@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { code } = body
 
+    console.log('code', code)
+
     if (!code) {
       return NextResponse.json({ error: 'Verification code is required' }, { status: 400 })
     }
@@ -83,9 +85,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      { error: 'Failed to verify code. Please try again.' },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: 'Failed to verify code. Please try again.' }, { status: 500 })
   }
 }

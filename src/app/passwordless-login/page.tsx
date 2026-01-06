@@ -83,13 +83,13 @@ export default function PasswordlessLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="passwordless-container">
+      <div>
+        <div className="passwordless-card">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Passwordless Login</h1>
-            <p className="text-gray-600">
+          <div className="passwordless-header">
+            <h1>Passwordless Login</h1>
+            <p>
               {step === 'email'
                 ? 'Enter your email to receive a verification code'
                 : 'Enter the code sent to your email'}
@@ -98,48 +98,41 @@ export default function PasswordlessLoginPage() {
 
           {/* Email Step */}
           {step === 'email' && (
-            <form onSubmit={handleSendCode} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
+            <form onSubmit={handleSendCode} className="passwordless-form">
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                   placeholder="you@example.com"
                   disabled={loading}
                 />
               </div>
 
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="alert alert-error">
+                  <p>{error}</p>
                 </div>
               )}
 
               {message && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-600">{message}</p>
+                <div className="alert alert-success">
+                  <p>{message}</p>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={loading} className="btn btn-primary">
                 {loading ? 'Sending Code...' : 'Send Verification Code'}
               </button>
 
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => window.location.href = '/'}
-                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium bg-transparent border-none cursor-pointer"
+                  onClick={() => (window.location.href = '/')}
+                  className="btn-link"
                 >
                   ← Back to login options
                 </button>
@@ -149,57 +142,51 @@ export default function PasswordlessLoginPage() {
 
           {/* Code Verification Step */}
           {step === 'code' && (
-            <form onSubmit={handleVerifyCode} className="space-y-6">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
-                <p className="text-sm text-blue-700">
+            <form onSubmit={handleVerifyCode} className="passwordless-form">
+              <div className="alert alert-info">
+                <p>
                   <strong>Code sent to:</strong> {email}
                 </p>
               </div>
 
-              <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Code
-                </label>
+              <div className="form-group">
+                <label htmlFor="code">Verification Code</label>
                 <input
                   id="code"
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-center text-2xl tracking-widest"
+                  className="code-input"
                   placeholder="000000"
-                  maxLength={6}
+                  maxLength={8}
                   disabled={loading}
                   autoFocus
                 />
               </div>
 
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="alert alert-error">
+                  <p>{error}</p>
                 </div>
               )}
 
               {message && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-600">{message}</p>
+                <div className="alert alert-success">
+                  <p>{message}</p>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={loading} className="btn btn-primary">
                 {loading ? 'Verifying...' : 'Verify & Login'}
               </button>
 
-              <div className="flex justify-between items-center text-sm">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={handleResendCode}
                   disabled={loading}
-                  className="text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50"
+                  className="btn-link"
                 >
                   Resend Code
                 </button>
@@ -211,7 +198,7 @@ export default function PasswordlessLoginPage() {
                     setError('')
                     setMessage('')
                   }}
-                  className="text-gray-600 hover:text-gray-700 font-medium"
+                  className="btn-link-gray"
                 >
                   Change Email
                 </button>
@@ -221,7 +208,7 @@ export default function PasswordlessLoginPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="passwordless-footer">
           <p>Secured with Amazon Cognito</p>
         </div>
       </div>
