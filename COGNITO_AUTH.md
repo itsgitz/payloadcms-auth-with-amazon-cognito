@@ -355,6 +355,98 @@ All fields are read-only in the admin panel to prevent manual modification.
 - Ensure email attribute exists for the user
 - Try resending the code (codes expire after 3 minutes)
 
+## Why AWS SDK Instead of Amplify v6 Gen 2?
+
+This implementation uses `@aws-sdk/client-cognito-identity-provider` directly rather than AWS Amplify v6 Gen 2 for several important architectural reasons:
+
+### 1. **Server-Side vs Client-Side Architecture**
+- **Amplify v6 Gen 2** is designed primarily for **client-side** (frontend) authentication in React/Next.js applications
+- This implementation is **server-side** (Next.js API routes) with backend token management
+- The AWS SDK provides direct control over server-side authentication flows through Next.js API routes
+
+### 2. **Custom Payload CMS Integration**
+- Payload CMS requires a **custom authentication strategy** (implemented in `src/collections/Users.ts`)
+- This strategy needs **direct token verification** and user synchronization on the backend
+- Amplify's frontend-focused approach doesn't integrate cleanly with Payload's server-side custom auth strategy
+- The custom strategy reads tokens from httpOnly cookies, which Amplify doesn't natively support
+
+### 3. **Security: HttpOnly Cookie Management**
+- All tokens are stored in **httpOnly cookies** for maximum security (prevents XSS attacks)
+- Cookie setting and management happens entirely on the server-side in API routes
+- Amplify v6 typically manages tokens in browser storage (localStorage/sessionStorage), which is vulnerable to XSS
+- Server-side cookie management ensures tokens never touch client-side JavaScript
+
+### 4. **Fine-Grained API Control**
+The AWS SDK provides direct access to specific Cognito APIs:
+```typescript
+// Direct control over authentication flow
+InitiateAuthCommand         // Start EMAIL_OTP flow
+RespondToAuthChallengeCommand  // Verify OTP codes
+```
+This level of control is essential for:
+- Custom error handling
+- Session management
+- Token exchange logic
+- Integration with Payload CMS
+
+### 5. **No Client-Side Bundle Bloat**
+- Amplify v6 would add ~200KB+ to the frontend JavaScript bundle
+- Since authentication is handled entirely on the server, there's no need for client-side authentication libraries
+- Smaller bundle size = faster page loads
+
+### 6. **Dual Authentication Method Support**
+- Supports both OAuth 2.0 (Hosted UI) and Passwordless (EMAIL_OTP) with consistent server-side handling
+- Both methods use the same token storage, verification, and Payload integration
+- Amplify v6 Gen 2's approach might require different handling for each authentication method
+
+### 7. **Backend-First Design**
+This is a **backend-first authentication system** where:
+- Authentication logic lives in Next.js API routes (server)
+- Tokens are verified server-side before reaching Payload CMS
+- Frontend only handles UI and API calls
+- No authentication state management needed on the client
+
+### What Would Be Required with Amplify v6 Gen 2
+
+If using Amplify instead, the implementation would need:
+- ❌ Client-side Amplify configuration (`amplify/auth/resource.ts`)
+- ❌ Frontend state management with Amplify React hooks
+- ❌ Browser-based token storage (less secure)
+- ❌ Complex bridging between Amplify's client-side tokens and Payload's server-side auth
+- ❌ Larger frontend bundle size (~200KB+)
+- ❌ Additional complexity managing auth state on both client and server
+
+### Benefits of Current AWS SDK Approach
+
+✅ **Server-side authentication** (Next.js API routes)
+✅ **Custom auth strategy** integration (Payload CMS)
+✅ **HttpOnly cookie security** (XSS protection)
+✅ **Backend token verification** (JWKS)
+✅ **Direct Cognito API control** (fine-grained error handling)
+✅ **Minimal frontend bundle** (no client-side auth libraries)
+✅ **Consistent dual-method support** (OAuth + Passwordless)
+✅ **Full control over authentication flow** (custom error messages, redirects)
+
+### When to Use Amplify v6 Gen 2 Instead
+
+Amplify v6 Gen 2 would be appropriate for:
+- Frontend-only React/Next.js applications
+- Applications using Amplify's full backend stack (AppSync, DynamoDB, etc.)
+- Apps that need client-side authentication state management
+- Projects already using Amplify ecosystem
+- Simple authentication without custom backend integration
+
+### Conclusion
+
+For a **Payload CMS integration with custom authentication**, the AWS SDK approach provides:
+- Better security (httpOnly cookies)
+- Cleaner architecture (server-side only)
+- More control (direct API access)
+- Smaller bundle size (no client libraries)
+- Easier maintenance (single source of truth on server)
+
+This makes it the superior choice for backend-first CMS platforms like Payload.
+
 ## Comparison: OAuth vs Passwordless
 
 | Feature | OAuth 2.0 Flow | Passwordless EMAIL_OTP |
